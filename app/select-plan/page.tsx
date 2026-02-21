@@ -58,15 +58,18 @@ export default function SelectPlanPage() {
     const ensureSession = async () => {
       try {
         const supabase = createClient();
-        const { data, error } = await supabase.auth.getSession();
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
 
-        if (error || !data.session?.user) {
+        if (error || !user) {
           router.replace("/login");
           return;
         }
 
         if (isMounted) {
-          setUserId(data.session.user.id);
+          setUserId(user.id);
         }
       } catch {
         router.replace("/login");

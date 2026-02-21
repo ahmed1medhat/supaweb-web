@@ -13,12 +13,12 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [isAwaitingEmailConfirmation, setIsAwaitingEmailConfirmation] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
-    setSuccessMessage("");
+    setIsAwaitingEmailConfirmation(false);
 
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match");
@@ -32,6 +32,9 @@ export default function SignupPage() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
 
       setIsLoading(false);
@@ -45,11 +48,17 @@ export default function SignupPage() {
       }
 
       if (!data.session) {
-        setSuccessMessage("Check your email to confirm your account.");
+        setIsAwaitingEmailConfirmation(true);
         return;
       }
 
-      router.push("/select-plan");
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("user_id", data.session.user.id)
+        .maybeSingle();
+
+      router.push(profile?.plan ? "/app" : "/select-plan");
     } catch (error) {
       setIsLoading(false);
       if (process.env.NODE_ENV === "development") {
@@ -68,6 +77,19 @@ export default function SignupPage() {
         <h1 className="text-3xl font-bold tracking-tight text-white">Create your Supaweb account</h1>
         <p className="mt-2 text-sm text-slate-400">Start your setup in less than a minute.</p>
 
+        {isAwaitingEmailConfirmation ? (
+          <div className="mt-8 space-y-5">
+            <p className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-3 text-sm font-medium text-emerald-300">
+              Check your email to confirm your account.
+            </p>
+            <Link
+              href="/login"
+              className="inline-flex w-full justify-center rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+            >
+              Go to login
+            </Link>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div>
             <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-300">
@@ -123,12 +145,6 @@ export default function SignupPage() {
             </p>
           ) : null}
 
-          {successMessage ? (
-            <p className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300">
-              {successMessage}
-            </p>
-          ) : null}
-
           <button
             type="submit"
             disabled={isLoading}
@@ -137,6 +153,7 @@ export default function SignupPage() {
             {isLoading ? "Creating account..." : "Sign up"}
           </button>
         </form>
+        )}
 
         <p className="mt-6 text-center text-sm text-slate-400">
           Already have an account?{" "}

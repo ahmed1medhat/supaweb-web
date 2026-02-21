@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -32,7 +32,13 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/app");
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+
+      router.push(profile?.plan ? "/app" : "/select-plan");
     } catch {
       setIsLoading(false);
       setErrorMessage("Invalid email or password");
