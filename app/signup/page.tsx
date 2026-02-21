@@ -13,10 +13,12 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
+    setSuccessMessage("");
 
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match");
@@ -27,7 +29,7 @@ export default function SignupPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -35,14 +37,25 @@ export default function SignupPage() {
       setIsLoading(false);
 
       if (error) {
-        setErrorMessage(error.message || "Unable to create account. Please try again.");
+        if (process.env.NODE_ENV === "development") {
+          console.log(error);
+        }
+        setErrorMessage(error.message);
+        return;
+      }
+
+      if (!data.session) {
+        setSuccessMessage("Check your email to confirm your account.");
         return;
       }
 
       router.push("/select-plan");
-    } catch {
+    } catch (error) {
       setIsLoading(false);
-      setErrorMessage("Unable to create account. Please try again.");
+      if (process.env.NODE_ENV === "development") {
+        console.log(error);
+      }
+      setErrorMessage(error instanceof Error ? error.message : "Unexpected error. Please try again.");
     }
   };
 
@@ -107,6 +120,12 @@ export default function SignupPage() {
           {errorMessage ? (
             <p className="rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-300">
               {errorMessage}
+            </p>
+          ) : null}
+
+          {successMessage ? (
+            <p className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300">
+              {successMessage}
             </p>
           ) : null}
 
