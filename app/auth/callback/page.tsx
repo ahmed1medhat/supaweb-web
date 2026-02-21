@@ -54,13 +54,18 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("plan")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      router.replace(profile?.plan ? "/app" : "/select-plan");
+      if (profileError && process.env.NODE_ENV === "development") {
+        console.log(profileError);
+      }
+
+      const hasPlan = typeof profile?.plan === "string" && profile.plan.trim().length > 0;
+      router.replace(hasPlan ? "/app" : "/select-plan");
     };
 
     void finishAuth();

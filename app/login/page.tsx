@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -30,7 +30,18 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace("/select-plan");
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+
+      if (profileError && process.env.NODE_ENV === "development") {
+        console.log(profileError);
+      }
+
+      const hasPlan = typeof profile?.plan === "string" && profile.plan.trim().length > 0;
+      router.replace(hasPlan ? "/app" : "/select-plan");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unexpected error. Please try again.");
     } finally {
