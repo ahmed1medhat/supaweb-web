@@ -20,28 +20,21 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      setIsLoading(false);
-
       if (error) {
-        setErrorMessage("Invalid email or password");
+        setErrorMessage(error.message);
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("plan")
-        .eq("user_id", data.user.id)
-        .maybeSingle();
-
-      router.push(profile?.plan ? "/app" : "/select-plan");
-    } catch {
+      router.replace("/select-plan");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unexpected error. Please try again.");
+    } finally {
       setIsLoading(false);
-      setErrorMessage("Invalid email or password");
     }
   };
 

@@ -37,12 +37,7 @@ export default function SignupPage() {
         },
       });
 
-      setIsLoading(false);
-
       if (error) {
-        if (process.env.NODE_ENV === "development") {
-          console.log(error);
-        }
         setErrorMessage(error.message);
         return;
       }
@@ -52,19 +47,11 @@ export default function SignupPage() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("plan")
-        .eq("user_id", data.session.user.id)
-        .maybeSingle();
-
-      router.push(profile?.plan ? "/app" : "/select-plan");
+      router.replace("/select-plan");
     } catch (error) {
-      setIsLoading(false);
-      if (process.env.NODE_ENV === "development") {
-        console.log(error);
-      }
       setErrorMessage(error instanceof Error ? error.message : "Unexpected error. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
