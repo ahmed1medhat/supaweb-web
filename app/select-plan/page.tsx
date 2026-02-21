@@ -47,9 +47,9 @@ const plans: Plan[] = [
 
 export default function SelectPlanPage() {
   const router = useRouter();
-  const [userId, setUserId] = useState<string | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isSavingPlan, setIsSavingPlan] = useState<PlanId | null>(null);
+  const [errorPlanId, setErrorPlanId] = useState<PlanId | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -68,9 +68,6 @@ export default function SelectPlanPage() {
           return;
         }
 
-        if (isMounted) {
-          setUserId(user.id);
-        }
       } catch {
         router.replace("/login");
       } finally {
@@ -88,36 +85,65 @@ export default function SelectPlanPage() {
   }, [router]);
 
   const handleSelectPlan = async (planId: PlanId) => {
-    if (!userId) {
-      router.replace("/login");
-      return;
-    }
-
+    setErrorPlanId(planId);
     setErrorMessage("");
     setIsSavingPlan(planId);
 
     try {
       const supabase = createClient();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        router.replace("/login");
+        return;
+      }
+
       const subscriptionStatus = planId === "free" ? "free" : "pending";
 
-      const { error } = await supabase.from("profiles").upsert(
-        {
-          user_id: userId,
-          plan: planId,
-          subscription_status: subscriptionStatus,
-          billing_cycle: null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" },
-      );
+      const { data, error } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            user_id: user.id,
+            plan: planId,
+            subscription_status: subscriptionStatus,
+            billing_cycle: null,
+          },
+          { onConflict: "user_id" },
+        )
+        .select("user_id,plan,subscription_status,billing_cycle")
+        .maybeSingle();
 
       if (error) {
         throw error;
       }
 
-      router.push("/app");
-    } catch {
-      setErrorMessage("Unable to save your plan. Please try again.");
+      if (!data) {
+        throw new Error("Plan save failed: no profile row returned from upsert.");
+      }
+
+      router.replace("/app");
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.log(error);
+      }
+
+      const supabaseMessage =
+        typeof error === "object" && error && "message" in error && typeof error.message === "string"
+          ? error.message
+          : "Plan save failed.";
+      const supabaseDetails =
+        typeof error === "object" && error && "details" in error && typeof error.details === "string"
+          ? error.details
+          : "";
+
+      setErrorMessage(
+        supabaseDetails ? `${supabaseMessage} Details: ${supabaseDetails}` : supabaseMessage,
+      );
+    } finally {
       setIsSavingPlan(null);
     }
   };
@@ -142,12 +168,6 @@ export default function SelectPlanPage() {
             Select a plan to set your current scan limits. You can change this later.
           </p>
         </div>
-
-        {errorMessage ? (
-          <p className="mx-auto mb-6 max-w-xl rounded-lg border border-red-400/40 bg-red-500/10 px-4 py-3 text-center text-sm font-medium text-red-300">
-            {errorMessage}
-          </p>
-        ) : null}
 
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan) => {
@@ -179,6 +199,12 @@ export default function SelectPlanPage() {
                 >
                   {isSavingThisPlan ? "Saving..." : "Select"}
                 </button>
+
+                {errorPlanId === plan.id && errorMessage ? (
+                  <p className="mt-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-300">
+                    {errorMessage}
+                  </p>
+                ) : null}
               </article>
             );
           })}
