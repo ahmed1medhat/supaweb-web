@@ -44,7 +44,7 @@ export default function HomePage() {
               Log in
             </Link>
             <Link
-              href="/pricing"
+              href="/signup"
               className="rounded-lg bg-blue-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-400"
             >
               Get Started Free
