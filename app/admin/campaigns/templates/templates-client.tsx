@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   CAMPAIGN_TEMPLATE_CATEGORY_LABELS,
   type CampaignTemplate,
@@ -34,18 +34,13 @@ export default function CampaignTemplatesClient({
   isAuthenticated,
 }: CampaignTemplatesClientProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-
-  const createHref = useMemo(() => {
-    if (!selectedTemplateId) {
-      return "/admin/campaigns/new";
-    }
-
-    return `/admin/campaigns/new?template=${encodeURIComponent(selectedTemplateId)}`;
-  }, [selectedTemplateId]);
+  const createPath = selectedTemplateId
+    ? `/admin/campaigns/new?template=${encodeURIComponent(selectedTemplateId)}`
+    : "/admin/campaigns/new";
 
   return (
     <section className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header className="relative z-20 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white">Campaign Templates</h1>
           <p className="mt-2 text-sm text-slate-400">
@@ -53,18 +48,26 @@ export default function CampaignTemplatesClient({
           </p>
         </div>
 
-        <div className="flex flex-col items-end gap-1">
-          <Link
-            href={createHref}
-            className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
-          >
-            Create Campaign
-          </Link>
+        <div className="relative z-30 pointer-events-auto flex flex-col items-end gap-1">
+          <form action="/admin/campaigns/new" method="get">
+            {selectedTemplateId ? <input type="hidden" name="template" value={selectedTemplateId} /> : null}
+            <button
+              type="submit"
+              className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+            >
+              Create Campaign
+            </button>
+          </form>
           {isAdmin ? (
             <p className="text-[11px] text-slate-400">
               selectedTemplateId: {selectedTemplateId ?? "none"} | isAdmin: {String(isAdmin)} |
-              isAuthenticated: {String(isAuthenticated)}
+              isAuthenticated: {String(isAuthenticated)} | createPath: {createPath}
             </p>
+          ) : null}
+          {isAdmin ? (
+            <a href={createPath} className="text-[11px] text-cyan-300 underline hover:text-cyan-200">
+              Open create URL directly
+            </a>
           ) : null}
         </div>
       </header>
