@@ -1,4 +1,3 @@
-import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -9,7 +8,6 @@ import type {
   PagesMode,
   PlanMode,
 } from "@/app/admin/campaigns/types";
-import { createClient } from "@/utils/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -56,23 +54,26 @@ type CampaignPayload = {
   updated_at: string | null;
 };
 
+type SiteRecord = {
+  id: string;
+  domain: string;
+  is_default: boolean;
+};
+
+type UserState = "guest" | "logged_in";
 type ViewerPlan = Exclude<PlanMode, "all">;
 
 const ACTIVE_LIMIT = 100;
 
-async function resolveDefaultSiteId(): Promise<string | null> {
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin.from("sites").select("id").eq("is_default", true).maybeSingle();
+function normalizeComparablePath(pathname: string): string {
+  const cleaned = pathname.split("?")[0].split("#")[0].trim();
 
-    if (error || !data?.id) {
-      return null;
-    }
-
-    return data.id;
-  } catch {
-    return null;
+  if (!cleaned || cleaned === "/") {
+    return "/";
   }
+
+  const withoutTrailing = cleaned.replace(/\/+$/, "");
+  return withoutTrailing.length > 0 ? withoutTrailing : "/";
 }
 
 function normalizePathname(pathname: string | null): string {
@@ -103,15 +104,46 @@ function normalizePathname(pathname: string | null): string {
   return normalizeComparablePath(pathOnly);
 }
 
-function normalizeComparablePath(pathname: string): string {
-  const cleaned = pathname.split("?")[0].split("#")[0].trim();
+function normalizeDomain(value: string): string {
+  const trimmed = value.trim().toLowerCase();
 
-  if (!cleaned || cleaned === "/") {
-    return "/";
+  if (!trimmed) {
+    return "";
   }
 
-  const withoutTrailing = cleaned.replace(/\/+$/, "");
-  return withoutTrailing.length > 0 ? withoutTrailing : "/";
+  try {
+    const withProtocol = trimmed.includes("://") ? trimmed : `https://${trimmed}`;
+    const url = new URL(withProtocol);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return trimmed.replace(/^www\./, "").replace(/\/.*$/, "");
+  }
+}
+
+function parseHost(headerValue: string | null): string | null {
+  if (!headerValue) {
+    return null;
+  }
+
+  try {
+    return new URL(headerValue).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+function isHostAllowed(requestHost: string, allowedDomain: string): boolean {
+  const normalizedHost = normalizeDomain(requestHost);
+  const normalizedAllowedDomain = normalizeDomain(allowedDomain);
+
+  if (!normalizedHost || !normalizedAllowedDomain) {
+    return false;
+  }
+
+  return (
+    normalizedHost === normalizedAllowedDomain ||
+    normalizedHost.endsWith(`.${normalizedAllowedDomain}`)
+  );
 }
 
 function normalizeIncludePaths(value: CampaignRecord["include_paths"]): string[] {
@@ -201,42 +233,28 @@ function matchesPagesMode(campaign: CampaignPayload, pathname: string): boolean 
   return campaign.include_paths.some((path) => includePathMatches(pathname, path));
 }
 
-function matchesAudienceMode(campaign: CampaignPayload, user: User | null): boolean {
+function normalizeUserState(value: string | null): UserState {
+  return value === "logged_in" ? "logged_in" : "guest";
+}
+
+function matchesAudienceMode(campaign: CampaignPayload, userState: UserState): boolean {
   if (campaign.audience_mode === "all") {
     return true;
   }
 
   if (campaign.audience_mode === "guest") {
-    return !user;
+    return userState === "guest";
   }
 
-  return Boolean(user);
+  return userState === "logged_in";
 }
 
-function normalizeViewerPlan(value: unknown): ViewerPlan | null {
+function normalizeViewerPlan(value: string | null): ViewerPlan | null {
   if (value === "free" || value === "pro" || value === "scale" || value === "enterprise") {
     return value;
   }
 
   return null;
-}
-
-async function resolveViewerPlan(supabase: Awaited<ReturnType<typeof createClient>>, user: User | null) {
-  if (!user) {
-    return null;
-  }
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("plan")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (error) {
-    return null;
-  }
-
-  return normalizeViewerPlan(data?.plan);
 }
 
 function matchesPlanMode(campaign: CampaignPayload, viewerPlan: ViewerPlan | null): boolean {
@@ -247,56 +265,129 @@ function matchesPlanMode(campaign: CampaignPayload, viewerPlan: ViewerPlan | nul
   return viewerPlan === campaign.plan_mode;
 }
 
+function getResponseHeaders(origin: string | null, includeCors: boolean): HeadersInit {
+  const headers: Record<string, string> = {
+    "Cache-Control": "no-store",
+    Vary: "Origin",
+  };
+
+  if (includeCors && origin) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+
+  return headers;
+}
+
+export async function OPTIONS(request: Request) {
+  const origin = request.headers.get("origin");
+
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      ...getResponseHeaders(origin, Boolean(origin)),
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
+}
+
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const pathname = normalizePathname(new URL(request.url).searchParams.get("pathname"));
-  const defaultSiteId = await resolveDefaultSiteId();
+  const requestUrl = new URL(request.url);
+  const origin = request.headers.get("origin");
+  const siteKey = requestUrl.searchParams.get("site_key")?.trim() ?? "";
+  const path = requestUrl.searchParams.get("path");
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (!siteKey || !path) {
+    return NextResponse.json(
+      { campaign: null, error: "site_key and path are required." },
+      {
+        status: 400,
+        headers: getResponseHeaders(origin, Boolean(origin)),
+      },
+    );
+  }
 
-  const viewerPlan = await resolveViewerPlan(supabase, user);
+  const admin = createAdminClient();
+  const { data: site, error: siteError } = await admin
+    .from("sites")
+    .select("id,domain,is_default")
+    .eq("public_key", siteKey)
+    .maybeSingle();
 
-  let campaignsQuery = supabase
+  if (siteError || !site) {
+    return NextResponse.json(
+      { campaign: null },
+      {
+        status: 404,
+        headers: getResponseHeaders(origin, Boolean(origin)),
+      },
+    );
+  }
+
+  const siteRecord = site as SiteRecord;
+  const originHost = parseHost(origin);
+  const refererHost = parseHost(request.headers.get("referer"));
+  const allowed = [originHost, refererHost].some((host) => {
+    if (!host) {
+      return false;
+    }
+
+    return isHostAllowed(host, siteRecord.domain);
+  });
+
+  if (!allowed) {
+    return NextResponse.json(
+      { campaign: null },
+      {
+        status: 403,
+        headers: getResponseHeaders(origin, false),
+      },
+    );
+  }
+
+  const normalizedPath = normalizePathname(path);
+  const userState = normalizeUserState(requestUrl.searchParams.get("user_state"));
+  const viewerPlan = normalizeViewerPlan(requestUrl.searchParams.get("plan"));
+  let campaignsQuery = admin
     .from("campaigns")
-    .select("*")
+    .select(
+      "id,name,type,priority,title,message,cta_text,cta_url,primary_color,text_color,background_style,position,pages_mode,include_paths,audience_mode,plan_mode,frequency,updated_at",
+    )
     .eq("status", "active")
     .order("priority", { ascending: true })
     .order("updated_at", { ascending: false })
     .limit(ACTIVE_LIMIT);
 
-  if (defaultSiteId) {
-    campaignsQuery = campaignsQuery.or(`site_id.eq.${defaultSiteId},site_id.is.null`);
-  }
+  campaignsQuery = siteRecord.is_default
+    ? campaignsQuery.or(`site_id.eq.${siteRecord.id},site_id.is.null`)
+    : campaignsQuery.eq("site_id", siteRecord.id);
 
-  const { data, error } = await campaignsQuery;
+  const { data: campaignRows, error: campaignsError } = await campaignsQuery;
 
-  if (error || !data) {
+  if (campaignsError || !campaignRows) {
     return NextResponse.json(
       { campaign: null },
       {
-        headers: { "Cache-Control": "no-store" },
+        headers: getResponseHeaders(origin, true),
       },
     );
   }
 
-  const campaigns = data as CampaignRecord[];
-
+  const records = campaignRows as CampaignRecord[];
   let selected: CampaignPayload | null = null;
 
-  for (const record of campaigns) {
+  for (const record of records) {
     const candidate = toPayload(record);
 
     if (!candidate) {
       continue;
     }
 
-    if (!matchesPagesMode(candidate, pathname)) {
+    if (!matchesPagesMode(candidate, normalizedPath)) {
       continue;
     }
 
-    if (!matchesAudienceMode(candidate, user)) {
+    if (!matchesAudienceMode(candidate, userState)) {
       continue;
     }
 
@@ -311,7 +402,7 @@ export async function GET(request: Request) {
   return NextResponse.json(
     { campaign: selected },
     {
-      headers: { "Cache-Control": "no-store" },
+      headers: getResponseHeaders(origin, true),
     },
   );
 }
