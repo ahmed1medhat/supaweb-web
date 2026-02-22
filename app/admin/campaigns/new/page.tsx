@@ -1,6 +1,8 @@
-import CampaignForm from "@/app/admin/campaigns/_components/campaign-form";
 import FlashMessage from "@/app/admin/campaigns/_components/flash-message";
+import VisualCampaignBuilder from "@/app/admin/campaigns/_components/visual-campaign-builder";
 import { createCampaignAction } from "@/app/admin/campaigns/actions";
+import { buildInitialValuesFromTemplate } from "@/app/admin/campaigns/builder-defaults";
+import { getCampaignTemplateById } from "@/app/admin/campaigns/template-library";
 
 type SearchParamValue = string | string[] | undefined;
 type SearchParams = Record<string, SearchParamValue>;
@@ -11,20 +13,25 @@ type NewCampaignPageProps = {
 
 export default async function NewCampaignPage({ searchParams }: NewCampaignPageProps) {
   const resolvedSearchParams = (await Promise.resolve(searchParams)) ?? {};
+  const templateIdRaw = resolvedSearchParams.template;
+  const templateId = Array.isArray(templateIdRaw) ? templateIdRaw[0] : templateIdRaw;
+  const template = getCampaignTemplateById(templateId);
+  const initialValues = buildInitialValuesFromTemplate(template);
 
   return (
     <section className="space-y-4">
-      <header>
-        <h1 className="text-3xl font-bold tracking-tight text-white">Create Campaign</h1>
-        <p className="mt-2 text-sm text-slate-400">Configure a new onsite campaign.</p>
-      </header>
-
       <FlashMessage error={resolvedSearchParams.error} />
 
-      <CampaignForm
+      <VisualCampaignBuilder
         action={createCampaignAction}
         submitLabel="Create Campaign"
         backHref="/admin/campaigns"
+        initialValues={initialValues}
+        title="Create Campaign"
+        description="Build and preview your campaign before saving."
+        templateName={template.name}
+        templateId={template.id}
+        templatePickerHref="/admin/campaigns/templates"
       />
     </section>
   );

@@ -30,7 +30,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
 
   const { data, error } = await supabase
     .from("campaigns")
-    .select("id,created_at,updated_at,name,type,status,priority,title,message,cta_text,cta_url,pages_mode,include_paths,audience_mode,plan_mode,frequency")
+    .select("id,created_at,updated_at,name,type,status,priority,title,message,cta_text,cta_url,primary_color,text_color,background_style,position,pages_mode,include_paths,audience_mode,plan_mode,frequency")
     .order("priority", { ascending: true })
     .order("updated_at", { ascending: false });
 
@@ -49,12 +49,20 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
             Create onsite campaigns. Priority controls which campaign appears first.
           </p>
         </div>
-        <Link
-          href="/admin/campaigns/new"
-          className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
-        >
-          New Campaign
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/campaigns/templates"
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-slate-300 transition hover:border-white/30 hover:text-white"
+          >
+            Templates
+          </Link>
+          <Link
+            href="/admin/campaigns/new"
+            className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+          >
+            New Campaign
+          </Link>
+        </div>
       </header>
 
       <FlashMessage success={resolvedSearchParams.success} error={resolvedSearchParams.error ?? loadError ?? undefined} />
