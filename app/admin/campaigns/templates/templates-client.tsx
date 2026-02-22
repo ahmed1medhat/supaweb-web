@@ -34,9 +34,18 @@ export default function CampaignTemplatesClient({
   isAuthenticated,
 }: CampaignTemplatesClientProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [clicked, setClicked] = useState(false);
   const createPath = selectedTemplateId
     ? `/admin/campaigns/new?template=${encodeURIComponent(selectedTemplateId)}`
     : "/admin/campaigns/new";
+
+  const handleCreateClick = () => {
+    setClicked(true);
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("create-campaign-clicked");
+    }
+  };
 
   return (
     <section className="space-y-6">
@@ -48,26 +57,22 @@ export default function CampaignTemplatesClient({
           </p>
         </div>
 
-        <div className="relative z-30 pointer-events-auto flex flex-col items-end gap-1">
-          <form action="/admin/campaigns/new" method="get">
-            {selectedTemplateId ? <input type="hidden" name="template" value={selectedTemplateId} /> : null}
-            <button
-              type="submit"
+        <div className="relative z-50 pointer-events-auto flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2">
+            <Link
+              href={createPath}
+              onClick={handleCreateClick}
               className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
             >
               Create Campaign
-            </button>
-          </form>
+            </Link>
+            {clicked ? <span className="text-xs text-cyan-200">Clicked</span> : null}
+          </div>
           {isAdmin ? (
             <p className="text-[11px] text-slate-400">
               selectedTemplateId: {selectedTemplateId ?? "none"} | isAdmin: {String(isAdmin)} |
               isAuthenticated: {String(isAuthenticated)} | createPath: {createPath}
             </p>
-          ) : null}
-          {isAdmin ? (
-            <a href={createPath} className="text-[11px] text-cyan-300 underline hover:text-cyan-200">
-              Open create URL directly
-            </a>
           ) : null}
         </div>
       </header>
