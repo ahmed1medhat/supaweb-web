@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import LogoutButton from "@/components/logout-button";
 
 type PlanId = "free" | "pro" | "scale" | "enterprise";
 
@@ -96,7 +97,10 @@ export default async function AppPage() {
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-14 text-slate-100">
       <section className="mx-auto max-w-4xl space-y-8">
-        <h1 className="text-3xl font-bold tracking-tight text-white">Welcome, {user.email ?? "User"}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Welcome, {user.email ?? "User"}</h1>
+          <LogoutButton className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white" />
+        </div>
 
         <article className="rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-black/30">
           <h2 className="text-xl font-semibold text-white">Your Plan</h2>
@@ -126,6 +130,9 @@ export default async function AppPage() {
 
         <section className="rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-black/30">
           <h2 className="text-xl font-semibold text-white">My Reports</h2>
+          <p className="mt-3 text-sm font-medium text-cyan-200">
+            1) Download Desktop  2) Run a scan  3) Reports appear here
+          </p>
           <p className="mt-3 text-sm text-slate-400">
             No reports yet. Run a scan from Desktop to see results here.
           </p>

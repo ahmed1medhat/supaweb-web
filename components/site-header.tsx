@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import LogoutButton from "@/components/logout-button";
 
 export default function SiteHeader() {
-  const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
@@ -35,18 +34,6 @@ export default function SiteHeader() {
       subscription.unsubscribe();
     };
   }, []);
-
-  const handleLogout = async () => {
-    if (!isReady) {
-      return;
-    }
-
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    setIsLoggedIn(false);
-    router.push("/");
-    router.refresh();
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-lg">
@@ -90,13 +77,9 @@ export default function SiteHeader() {
               >
                 Dashboard
               </Link>
-              <button
-                type="button"
-                onClick={() => void handleLogout()}
+              <LogoutButton
                 className="text-sm font-semibold text-slate-400 transition-colors hover:text-white"
-              >
-                Log out
-              </button>
+              />
             </>
           ) : (
             <>

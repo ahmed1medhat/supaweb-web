@@ -1,12 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import {
   Download, ArrowRight, Shield, Zap, CheckCircle2,
   Clock, Monitor, Globe, BarChart3, Lock, Database,
   Server, Eye, Play, Cpu, Upload, Trash2,
   ChevronDown, Tag, Calendar, Mail, ExternalLink,
 } from "lucide-react";
+
+const DOWNLOAD_PAGE_THEME: CSSProperties = {
+  "--background": "#070b14",
+  "--foreground": "#f3f6ff",
+  "--muted": "#97a3ba",
+  "--surface": "#111827",
+  "--surface-2": "#151f33",
+  "--surface-3": "#1d2a44",
+  "--border": "rgba(148,163,184,0.2)",
+  "--border-hover": "rgba(148,163,184,0.45)",
+  "--font-geist-mono":
+    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace",
+} as CSSProperties;
 
 // ─── NAVBAR ──────────────────────────────────────────────────────────────────
 function Navbar() {
@@ -62,11 +75,11 @@ function Navbar() {
       <a id="nav-download-btn" href="#download" style={{
         display: "inline-flex", alignItems: "center", gap: "6px",
         padding: "8px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: 600,
-        background: "#fff", color: "#000", textDecoration: "none",
+        background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "#f8fafc", textDecoration: "none",
         transition: "all 0.2s ease",
       }}
-        onMouseEnter={e => { e.currentTarget.style.background = "#e8e8e8"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.transform = "translateY(0)"; }}
+        onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg,#5b53ee,#8b5cf6)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg,#4f46e5,#7c3aed)"; e.currentTarget.style.transform = "translateY(0)"; }}
       >
         <Download size={13} /> Download
       </a>
@@ -234,11 +247,12 @@ function Hero() {
         <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginBottom: "48px" }}>
           <a id="download-windows-btn" href="#download" style={{
             display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 28px",
-            borderRadius: "8px", fontSize: "15px", fontWeight: 600, background: "#fff", color: "#000",
+            borderRadius: "8px", fontSize: "15px", fontWeight: 600,
+            background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "#f8fafc",
             textDecoration: "none", transition: "all 0.2s ease",
           }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#efefef"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.transform = "translateY(0)"; }}
+            onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg,#5b53ee,#8b5cf6)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg,#4f46e5,#7c3aed)"; e.currentTarget.style.transform = "translateY(0)"; }}
           >
             <Download size={16} /> Download for Windows
           </a>
@@ -356,14 +370,23 @@ function PlatformAvailability() {
                 {p.version}{p.size !== "—" && <span style={{ marginLeft: "8px" }}>· {p.size}</span>}
               </p>
               <p style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 24px", lineHeight: 1.5 }}>{p.req}</p>
+              {p.id === "windows" && (
+                <div style={{ margin: "0 0 16px", padding: "10px 12px", borderRadius: "8px", background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--foreground)" }}>
+                    System Requirements
+                  </p>
+                  <p style={{ margin: "0 0 4px", fontSize: "12px", color: "var(--muted)" }}>Windows 10/11 64-bit</p>
+                  <p style={{ margin: 0, fontSize: "12px", color: "var(--muted)" }}>Recommended: 8GB RAM+, SSD</p>
+                </div>
+              )}
               {p.available ? (
                 <a id={`download-${p.id}`} href="#" style={{
                   width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
                   padding: "12px 24px", borderRadius: "8px", fontSize: "14px", fontWeight: 600,
-                  background: "#fff", color: "#000", textDecoration: "none", transition: "all 0.2s ease",
+                  background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "#f8fafc", textDecoration: "none", transition: "all 0.2s ease",
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "#efefef"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "#fff"; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg,#5b53ee,#8b5cf6)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg,#4f46e5,#7c3aed)"; }}
                 >
                   <Download size={15} /> Download for {p.name}
                 </a>
@@ -723,6 +746,9 @@ function ReleaseNotes() {
                     <span style={{ fontSize: "11px", color: "var(--muted)" }}>SHA-256:</span>
                     <span style={{ fontSize: "11px", fontFamily: "var(--font-geist-mono)", color: "var(--foreground)", opacity: 0.6 }}>{r.sha256}</span>
                   </div>
+                  <p style={{ margin: "8px 0 0", fontSize: "11px", color: "var(--muted)" }}>
+                    Verify with SHA-256 before install. Releases are signed.
+                  </p>
                 </div>
               )}
             </div>
@@ -752,9 +778,9 @@ function FinalCTA() {
               Download the Desktop Agent, connect your account, and run your first enterprise revenue scan in under 3 minutes.
             </p>
             <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-              <a id="final-download-btn" href="#download" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 32px", borderRadius: "8px", fontSize: "15px", fontWeight: 600, background: "#fff", color: "#000", textDecoration: "none", transition: "all 0.2s ease" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#efefef"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.transform = "translateY(0)"; }}
+              <a id="final-download-btn" href="#download" style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "14px 32px", borderRadius: "8px", fontSize: "15px", fontWeight: 600, background: "linear-gradient(135deg,#4f46e5,#7c3aed)", color: "#f8fafc", textDecoration: "none", transition: "all 0.2s ease" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg,#5b53ee,#8b5cf6)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg,#4f46e5,#7c3aed)"; e.currentTarget.style.transform = "translateY(0)"; }}
               >
                 <Download size={16} /> Download for Windows
               </a>
@@ -856,7 +882,15 @@ function Divider() {
 // ─── PAGE ─────────────────────────────────────────────────────────────────────
 export default function Home() {
   return (
-    <main>
+    <main
+      style={{
+        ...DOWNLOAD_PAGE_THEME,
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at 15% -10%, rgba(99,102,241,0.2), transparent 35%), radial-gradient(circle at 85% 0%, rgba(124,58,237,0.18), transparent 30%), var(--background)",
+        color: "var(--foreground)",
+      }}
+    >
       <Navbar />
       <Hero />
       <Divider />
