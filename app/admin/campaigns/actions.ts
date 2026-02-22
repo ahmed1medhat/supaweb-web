@@ -83,6 +83,23 @@ function parseHexColor(value: string, fallback: string, fieldLabel: string): str
   return value;
 }
 
+function withQueryParams(pathname: string, params: Record<string, string | undefined>): string {
+  const [basePath, existingQuery = ""] = pathname.split("?");
+  const searchParams = new URLSearchParams(existingQuery);
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      searchParams.set(key, value);
+      continue;
+    }
+
+    searchParams.delete(key);
+  }
+
+  const queryString = searchParams.toString();
+  return queryString ? `${basePath}?${queryString}` : basePath;
+}
+
 function buildCampaignPayload(formData: FormData) {
   const name = getString(formData, "name");
 
@@ -147,19 +164,19 @@ async function getAdminSupabaseClient() {
 }
 
 function redirectWithError(pathname: string, message: string): never {
-  redirect(`${pathname}?error=${encodeURIComponent(message)}`);
+  redirect(withQueryParams(pathname, { error: message }));
 }
 
 function redirectWithSuccess(pathname: string, message: string): never {
-  redirect(`${pathname}?success=${encodeURIComponent(message)}`);
+  redirect(withQueryParams(pathname, { success: message }));
 }
 
 export async function createCampaignAction(formData: FormData) {
   const supabase = await getAdminSupabaseClient();
   const templateId = getString(formData, "template_id");
-  const createPath = templateId
-    ? `/admin/campaigns/new?template=${encodeURIComponent(templateId)}`
-    : "/admin/campaigns/new";
+  const createPath = withQueryParams("/admin/campaigns/new", {
+    template: templateId || undefined,
+  });
 
   let payload: ReturnType<typeof buildCampaignPayload>;
 

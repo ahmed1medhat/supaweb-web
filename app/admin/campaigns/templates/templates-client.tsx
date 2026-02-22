@@ -28,6 +28,17 @@ type CampaignTemplatesClientProps = {
   isAuthenticated: boolean;
 };
 
+function buildCreateCampaignPath(templateId?: string | null): string {
+  const searchParams = new URLSearchParams();
+
+  if (templateId) {
+    searchParams.set("template", templateId);
+  }
+
+  const queryString = searchParams.toString();
+  return queryString ? `/admin/campaigns/new?${queryString}` : "/admin/campaigns/new";
+}
+
 export default function CampaignTemplatesClient({
   templates,
   isAdmin,
@@ -35,9 +46,7 @@ export default function CampaignTemplatesClient({
 }: CampaignTemplatesClientProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [clicked, setClicked] = useState(false);
-  const createPath = selectedTemplateId
-    ? `/admin/campaigns/new?template=${encodeURIComponent(selectedTemplateId)}`
-    : "/admin/campaigns/new";
+  const createPath = buildCreateCampaignPath(selectedTemplateId);
 
   const handleEmergencyClick = () => {
     setClicked(true);
@@ -127,7 +136,7 @@ export default function CampaignTemplatesClient({
                           {selected ? "Selected" : "Select template"}
                         </button>
                         <Link
-                          href={`/admin/campaigns/new?template=${encodeURIComponent(template.id)}`}
+                          href={buildCreateCampaignPath(template.id)}
                           className="inline-flex items-center justify-center rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:border-cyan-300/60 hover:bg-cyan-500/20"
                         >
                           Quick use
