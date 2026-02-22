@@ -34,9 +34,16 @@ export default function CampaignTemplatesClient({
   isAuthenticated,
 }: CampaignTemplatesClientProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [clicked, setClicked] = useState(false);
   const createPath = selectedTemplateId
     ? `/admin/campaigns/new?template=${encodeURIComponent(selectedTemplateId)}`
     : "/admin/campaigns/new";
+
+  const handleEmergencyClick = () => {
+    setClicked(true);
+    alert("clicked");
+    window.location.assign(createPath);
+  };
 
   return (
     <section className="space-y-6">
@@ -53,14 +60,14 @@ export default function CampaignTemplatesClient({
             id="create-campaign-cta"
             href={createPath}
             prefetch={false}
-            className="relative z-[9999] inline-flex pointer-events-auto rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+            className="relative z-[9999] inline-flex pointer-events-auto rounded-lg border-4 border-fuchsia-300 bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
           >
             Create Campaign
           </Link>
           {isAdmin ? (
             <p className="text-[11px] text-slate-400">
               selectedTemplateId: {selectedTemplateId ?? "none"} | isAdmin: {String(isAdmin)} |
-              isAuthenticated: {String(isAuthenticated)} | createPath: {createPath}
+              isAuthenticated: {String(isAuthenticated)} | createPath: {createPath} | clicked: {String(clicked)}
             </p>
           ) : null}
         </div>
@@ -143,6 +150,16 @@ export default function CampaignTemplatesClient({
           Back to Campaigns
         </Link>
       </div>
+
+      {isAdmin ? (
+        <button
+          type="button"
+          onClick={handleEmergencyClick}
+          className="fixed right-4 bottom-4 z-[2147483647] rounded-lg border-4 border-red-400 bg-red-600 px-4 py-3 text-sm font-bold text-white shadow-2xl"
+        >
+          DEBUG Create Campaign
+        </button>
+      ) : null}
     </section>
   );
 }
