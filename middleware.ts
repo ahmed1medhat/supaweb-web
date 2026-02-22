@@ -3,8 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 function getSupabaseEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
     throw new Error("Missing Supabase environment variables for middleware auth checks.");
@@ -14,9 +13,6 @@ function getSupabaseEnv() {
 }
 
 export async function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-  const isAuthCallback = pathname.startsWith("/auth/callback");
-
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -43,10 +39,6 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  if (isAuthCallback) {
-    return response;
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -61,5 +53,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  // Only protect app/admin/select-plan. Public pages such as /, /login, /signup, /auth/callback remain open.
   matcher: ["/app/:path*", "/admin/:path*", "/select-plan"],
 };
