@@ -8,7 +8,19 @@ export default function AdminPage() {
         <p className="mt-2 text-sm text-slate-400">Manage campaigns, integrations, and content from one place.</p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Link
+          href="/admin/users"
+          className="rounded-lg border border-white/10 bg-slate-800/60 px-4 py-3 text-sm font-medium text-slate-100 transition hover:border-cyan-400/40 hover:text-white"
+        >
+          Users
+        </Link>
+        <Link
+          href="/admin/coupons"
+          className="rounded-lg border border-white/10 bg-slate-800/60 px-4 py-3 text-sm font-medium text-slate-100 transition hover:border-cyan-400/40 hover:text-white"
+        >
+          Coupons
+        </Link>
         <Link
           href="/admin/campaigns"
           className="rounded-lg border border-white/10 bg-slate-800/60 px-4 py-3 text-sm font-medium text-slate-100 transition hover:border-cyan-400/40 hover:text-white"

@@ -108,6 +108,7 @@ export default function SelectPlanPage() {
         .upsert(
           {
             user_id: user.id,
+            email: user.email?.toLowerCase() ?? null,
             plan: planId,
             subscription_status: subscriptionStatus,
             billing_cycle: null,

@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveEffectivePlan, type PlanId } from "@/lib/entitlements";
 import type {
   AudienceMode,
   CampaignPosition,
@@ -56,7 +57,7 @@ type CampaignPayload = {
   updated_at: string | null;
 };
 
-type ViewerPlan = Exclude<PlanMode, "all">;
+type ViewerPlan = PlanId;
 
 const ACTIVE_LIMIT = 100;
 
@@ -213,14 +214,6 @@ function matchesAudienceMode(campaign: CampaignPayload, user: User | null): bool
   return Boolean(user);
 }
 
-function normalizeViewerPlan(value: unknown): ViewerPlan | null {
-  if (value === "free" || value === "pro" || value === "scale" || value === "enterprise") {
-    return value;
-  }
-
-  return null;
-}
-
 async function resolveViewerPlan(supabase: Awaited<ReturnType<typeof createClient>>, user: User | null) {
   if (!user) {
     return null;
@@ -228,15 +221,15 @@ async function resolveViewerPlan(supabase: Awaited<ReturnType<typeof createClien
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("plan")
+    .select("plan,admin_plan_override,admin_override_expires_at")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     return null;
   }
 
-  return normalizeViewerPlan(data?.plan);
+  return resolveEffectivePlan(data).effectivePlan;
 }
 
 function matchesPlanMode(campaign: CampaignPayload, viewerPlan: ViewerPlan | null): boolean {
