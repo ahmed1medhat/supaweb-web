@@ -1,8 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const ADMIN_ALLOWLIST = new Set(["ahmed@supaweblabs.com"]);
-
 function getSupabaseEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey =
@@ -17,8 +15,7 @@ function getSupabaseEnv() {
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isAuthCallback = pathname.startsWith("/app/auth/callback");
-  const isAdminRoute = pathname.startsWith("/admin");
+  const isAuthCallback = pathname.startsWith("/auth/callback");
 
   let response = NextResponse.next({
     request: {
@@ -60,31 +57,7 @@ export async function middleware(request: NextRequest) {
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }
-
-  if (!isAdminRoute) {
-    return response;
-  }
-
-  let isAdmin = ADMIN_ALLOWLIST.has((user.email ?? "").toLowerCase());
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!error && data && typeof data.is_admin === "boolean") {
-    isAdmin = isAdmin || data.is_admin;
-  }
-
-  if (isAdmin) {
-    return response;
-  }
-
-  const redirectUrl = request.nextUrl.clone();
-  redirectUrl.pathname = "/app";
-  redirectUrl.search = "";
-  return NextResponse.redirect(redirectUrl);
+  return response;
 }
 
 export const config = {
