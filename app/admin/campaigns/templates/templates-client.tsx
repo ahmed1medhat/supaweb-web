@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   CAMPAIGN_TEMPLATE_CATEGORY_LABELS,
@@ -34,7 +33,6 @@ export default function CampaignTemplatesClient({
   isAdmin,
   isAuthenticated,
 }: CampaignTemplatesClientProps) {
-  const router = useRouter();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   const createHref = useMemo(() => {
@@ -56,20 +54,12 @@ export default function CampaignTemplatesClient({
         </div>
 
         <div className="flex flex-col items-end gap-1">
-          <button
-            type="button"
-            disabled={!selectedTemplateId}
-            onClick={() => {
-              if (!selectedTemplateId) {
-                return;
-              }
-
-              router.push(createHref);
-            }}
-            className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-55"
+          <Link
+            href={createHref}
+            className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
           >
             Create Campaign
-          </button>
+          </Link>
           {isAdmin ? (
             <p className="text-[11px] text-slate-400">
               selectedTemplateId: {selectedTemplateId ?? "none"} | isAdmin: {String(isAdmin)} |
