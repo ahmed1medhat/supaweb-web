@@ -1,5 +1,6 @@
 // app/layout.tsx
 import "./globals.css";
+import CampaignWidget from "@/components/CampaignWidget";
 
 export const metadata = {
   title: "SupaWeb",
@@ -42,7 +43,10 @@ export default function RootLayout({
       </head>
 
       {/* مهم: خلي الـ body هنا بدون Tailwind CDN */}
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        {children}
+        <CampaignWidget />
+      </body>
     </html>
   );
 }
